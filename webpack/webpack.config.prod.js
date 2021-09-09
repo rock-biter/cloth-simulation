@@ -9,7 +9,10 @@ module.exports = merge(common, {
     stats: 'errors-only',
     bail: true,
     output: {
-        filename: 'js/[name].[chunkhash:8].js',
+        filename: (pathData) => {
+            console.log(pathData.chunk.name)
+            return pathData.chunk.name === 'app' ? 'js/[name].[chunkhash:8].js' : 'js/[name].js';
+        },
         chunkFilename: 'js/[name].[chunkhash:8].chunk.js',
     },
     plugins: [

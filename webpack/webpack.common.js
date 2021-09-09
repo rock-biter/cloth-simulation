@@ -6,6 +6,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
     entry: {
         app: Path.resolve(__dirname, '../src/js/app.js'),
+        worker: Path.resolve(__dirname, '../src/js/workers/worker.js')
     },
     output: {
         path: Path.join(__dirname,'../dist'),
@@ -13,7 +14,11 @@ module.exports = {
     },
     plugins: [
         new CleanWebpackPlugin(),
-        // new CopyWebpackPlugin({ patterns: [{ from: Path.resolve(__dirname, '../public'), to: 'public' }] }),
+        new CopyWebpackPlugin({ patterns: [
+            { from: Path.resolve(__dirname, '../src/models'), to: 'models' }, 
+            { from: Path.resolve(__dirname, '../src/fabric'), to: 'fabric' },
+            { from: Path.resolve(__dirname, '../src/textures'), to: 'textures' }
+        ]}),
         new HtmlWebpackPlugin({
             template: Path.resolve(__dirname, '../src/index.html'),
         }),
