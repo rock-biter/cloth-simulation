@@ -84,7 +84,7 @@ window.addEventListener('DOMContentLoaded', () => {
     d: 200
   }
 
-  const phongMaterial = new THREE.MeshPhongMaterial()
+  const phongMaterial = new THREE.MeshPhongMaterial({color: new THREE.Color(0.1,0.1,0.1)})
   phongMaterial.side = THREE.DoubleSide;
 
   const planeGeometry = new THREE.BoxGeometry(conf.l,conf.h,conf.d)
@@ -181,12 +181,14 @@ window.addEventListener('DOMContentLoaded', () => {
     let clothGeometry = new THREE.ParametricGeometry(clothFunction, Nx, Nz)
     clothGeometry.attributes.position.needsUpdate = true
 
+    console.log(clothGeometry)
+
     const clothPhongMaterial = new THREE.MeshPhongMaterial()
     clothPhongMaterial.side = THREE.DoubleSide;
     clothPhongMaterial.color = new THREE.Color('#25fbac')
 
-    console.log(AccraGold)
-    Fabric.createMaterial(AccraGold.material).then((clothMaterial) => {
+    // console.log(AccraGold)
+    Fabric.createMaterial(AlcamoFSC.material).then((clothMaterial) => {
 
 
       console.log(clothMaterial)
@@ -196,7 +198,28 @@ window.addEventListener('DOMContentLoaded', () => {
       
       clothMesh.castShadow = true
       clothMesh.receiveShadow = true
-      console.log(clothGeometry)
+      // console.log(clothGeometry)
+
+      // reset uv attribute
+      
+      var uvAttribute = clothGeometry.attributes.uv;
+		
+      for ( var i = 0; i < uvAttribute.count; i ++ ) {
+          
+          var u = uvAttribute.getX( i );
+          var v = uvAttribute.getY( i );
+            
+          // do something with uv
+          u *= 2
+          v *= 2
+
+          // write values back to attribute
+            
+          uvAttribute.setXY( i, u, v );
+          
+      }
+
+
       _APP.cloth = clothMesh;
 
       let index = clothGeometry.index.array;
