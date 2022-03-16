@@ -12,9 +12,12 @@ export default class QueryableWorker {
         this.worker = new Worker(url,{ type: "module" })
         // this.worker = new Worker()
 
-        this.defaultListener = defaultListener || function() {}
+        this.defaultListener = defaultListener || function() { console.log('default listener') }
+        console.log(this.worker)
 
         onError ? this.worker.onError = onError : this.worker.onError = function() {}
+
+        this.worker.postMessage = this.worker.webkitPostMessage || this.worker.postMessage
 
         this.worker.onmessage = this.onMessage
 
@@ -42,7 +45,7 @@ export default class QueryableWorker {
             return;
         }
 
-        // console.log('send query')
+        console.log('send query',args)
 
         this.worker.postMessage({
             'method' : args[0],
@@ -51,6 +54,7 @@ export default class QueryableWorker {
     }
 
     onMessage = (event) => {
+        console.log('on message')
         if(
             event.data instanceof Object &&
             event.data.hasOwnProperty('method') &&

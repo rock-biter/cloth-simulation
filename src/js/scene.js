@@ -6,6 +6,7 @@ import gsap from 'gsap'
 
 // import * as SOUNDS from './audio'
 import QueryableWorker from './QueryableWorker';
+import { Vec3 } from 'cannon-es'
 
 const event = new Event('gameover');
 
@@ -45,6 +46,18 @@ export default class BasicScene {
     meshes = []
     bodies = []
 
+    clothMass = 0.1 // 1 kg in total
+    clothSize = 150 // 1 meter
+    Nx = 40 // number of horizontal particles in the cloth
+    Nz = this.Nx // number of vertical particles in the cloth
+    mass = (this.clothMass / this.Nx) * this.Nz
+    restDistance = this.clothSize / this.Nx
+    particles = []
+    constraintCouple = [];
+    sphereMaterial
+
+    ready = false
+
     clock
     then = 0
     fr = 1/60
@@ -54,9 +67,14 @@ export default class BasicScene {
 
     loader =  new GLTFLoader()
 
-    constructor({ camera = {}, enableShadow = false, world = { forces: []}}) {
+    constructor({ camera = {}, enableShadow = false, world = { forces: [], clothData: {}}}) {
 
         this.clock = new THREE.Clock()
+
+        this.Nx = world.clothData.Nx // number of horizontal particles in the cloth
+        this.Nz = this.Nx // number of vertical particles in the cloth
+        this.mass = (this.clothMass / this.Nx) * this.Nz
+        this.restDistance = this.clothSize / this.Nx
 
         // this.maxSubStep = Math.max( Math.floor(this.fr / (1/60)),1)
 
@@ -67,7 +85,7 @@ export default class BasicScene {
         this.initRenderer(true)
         this.initDefaultLight()
         this.initCamera(camera)
-        this.initWorker()
+        // this.initWorker()
         this.initWorld(world.forces)
         this.initControls() 
         // this.animate()
@@ -105,8 +123,11 @@ export default class BasicScene {
         // this.renderer.shadowMap.type = THREE.PCFShadowMap
         document.body.appendChild(this.renderer.domElement);
 
-        this.renderer.toneMapping = THREE.ReinhardToneMapping
-        this.renderer.toneMappingExposure = 1
+        // this.renderer.toneMapping = THREE.ReinhardToneMapping
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+        this.renderer.toneMappingExposure = 1.3
+        this.renderer.physicallyCorrectLights = true
+        this.renderer.outputEncoding = THREE.sRGBEncoding
 
         window.addEventListener('resize', () => {
             this.onWindowResize()
@@ -183,9 +204,10 @@ export default class BasicScene {
 
     initDefaultLight() {
 
-        const hemi = new THREE.HemisphereLight(0xffffff,0x222222,1)
+        const hemi = new THREE.HemisphereLight(0xffffff,0x222222,0.2)
         const spot = new THREE.SpotLight(0xffc9bf,4.5)
         spot.castShadow = true
+        spot.intensity = 400
 
         // const ambientLight = new THREE.AmbientLight('#ffffff',0.5)
         // const dirLight = new THREE.DirectionalLight('#ffffff',0.8)
@@ -201,14 +223,17 @@ export default class BasicScene {
         target.position.set(0,60,0)
         spot.target = target
 
-        spot.shadow.bias = -0.00001
-        spot.shadow.normalBias = 0.01
+        spot.shadow.bias = -0.0001
+        spot.shadow.normalBias = 0.001
         spot.shadow.mapSize.width = 1024*4
         spot.shadow.mapSize.height = 1024*4
-        spot.shadow.radius = 2.7
+        spot.shadow.radius = 1.5
         // spot.shadow.camera.fov = 20
-        spot.decay = 2
-        spot.penumbra = 0.9
+        spot.shadow.camera.fov = 20
+        spot.shadow.camera.near = 50
+        spot.shadow.camera.far = 130
+        // spot.decay = 2
+        // spot.penumbra = 0.9
 
         // this.lights.push(dirLight)
 
@@ -221,7 +246,21 @@ export default class BasicScene {
      * @param  {Array.<CANNON.Vec3>} forces
      */
     initWorld(forces) {
-        this.worker.sendQuery('initWorld',null,forces)
+        // this.worker.sendQuery('initWorld',null,forces)
+
+        let force = new CANNON.Vec3();
+        for(let f of forces) {
+            force = force.vadd(f);
+        }
+
+        this.world = new CANNON.World({
+            gravity: force,
+            allowSleep: true
+        })
+
+        this.world.solver.iterations = 8
+
+        this.world.broadphase = new CANNON.SAPBroadphase(this.world)
 
         // this.worker.addListener('updateMeshes',(obj) => {
         //     // console.log('updateMeshs', this.scene);
@@ -264,6 +303,86 @@ export default class BasicScene {
     //     window.dispatchEvent(event);
     // }
 
+    step = function(fr,dt,sub) {
+
+        if( !this.world ) {
+            return
+        }
+
+        // if( start ) {
+        //     player.applyImpulse(wind)
+        //     // player.velocity = player.velocity.vadd(wind)
+        //     // world.gravity = world.gravity.vadd(wind)
+
+        //     player.position.y < -20 ? queryableFunction['resetGame'].apply(self) : null
+            
+        // }
+
+        this.world.step(fr,dt,sub)
+
+        if(this.sphere) {
+            angle += 0.05
+            let vel = new CANNON.Vec3(0,0.4*Math.sin(angle),0)
+            sphere.angularVelocity = vel
+
+            // console.log(sphere.angularVelocity)
+        }
+        // console.log(bufferPosition,ready)
+
+        if(this.ready && this.bufferPosition.length) {
+
+            // console.log(this.bufferPosition[0])
+            
+            for(let i = 0; i < this.particles.length; i++) {
+                // let i = 210;
+                // this.bufferPosition[i*3] = this.particles[i].position.x
+                // this.bufferPosition[i*3+1] = this.particles[i].position.y
+                // this.bufferPosition[i*3+2] = this.particles[i].position.z
+
+                // console.log(  vertexMap[i].body.position.z )
+
+                // let internalIndex = vertexMap[i].indices.indexOf(i)
+                
+                
+                // bufferPosition[i*3] = vertexMap[i].vertices[internalIndex*3]
+                // bufferPosition[i*3+1] = vertexMap[i].vertices[internalIndex*3+1]
+                // if(vertexMap[i]) {
+                //     console.log(vertexMap[i].body.position.z)
+                // } else {
+                //     console.log('tremesh not found')
+                // }
+                
+                // bufferPosition[i*3+2] = vertexMap[i].body.position.z
+
+                // console.log( internalIndex, [
+                //     vertexMap[i].vertices[internalIndex*3],
+                //     vertexMap[i].vertices[internalIndex*3+1],
+                //     vertexMap[i].vertices[internalIndex*3+2]
+                // ] , [
+                //     bufferPosition[i*3],
+                //     bufferPosition[i*3+1],
+                //     bufferPosition[i*3+2]
+                // ] )
+
+                // reply('updateParticle',i,{ 
+                //     x: particles[i].position.x,
+                //     y: particles[i].position.y,
+                //     z: particles[i].position.z
+                // })
+                this.cloth.geometry.attributes.position.array[i*3] = this.particles[i].position.x
+                this.cloth.geometry.attributes.position.array[i*3+1] = this.particles[i].position.y
+                this.cloth.geometry.attributes.position.array[i*3+2] = this.particles[i].position.z
+            }
+
+            this.cloth.geometry.computeVertexNormals()
+            this.cloth.geometry.attributes.position.needsUpdate = true;
+            this.cloth.geometry.attributes.normal.needsUpdate = true;
+
+        }
+        
+
+        
+    }
     
 
     animate = (now) =>  {
@@ -290,11 +409,11 @@ export default class BasicScene {
 
          */
 
-        
+        this.step(1/60,this.delta,this.maxSubStep)
 
         // if(this.delta > this.interval) {
 
-            this.worker.sendQuery('step',null,this.fr,this.delta,this.maxSubStep)
+            // this.worker.sendQuery('step',null,this.fr,this.delta,this.maxSubStep)
             // this.worker.sendQuery('step',this.clock.getDelta(),this.delta,this.maxSubStep)
 
             // if(this.meshes.length) {
@@ -312,6 +431,142 @@ export default class BasicScene {
       
         
     }
+
+    createBox = function({mass, conf, meshId}) {
+
+        // console.log('worker create platform');
+
+        let shape = new CANNON.Box(new CANNON.Vec3(conf.l/2,conf.h/2,conf.d/2));
+        let box = new CANNON.Body({mass: mass, shape: shape});
+        // box.material = new CANNON.Material({friction: 0})
+        box.position.copy(new CANNON.Vec3(conf.x,conf.y,conf.z))
+
+        // console.log(box.position)
+
+        this.world.addBody(box)
+
+        // box.addEventListener('collide', () => {
+        //     reply('onCollide',box.id,player.velocity)
+        // })
+
+        // reply('registerPlatformBody',box.id, meshId)
+
+    }
+
+    createSphere = function({mass, conf, meshId}) {
+
+        this.sphereMaterial = new CANNON.Material('sphere')
+
+        let shape = new CANNON.Sphere(conf.r);
+        const sphere = new CANNON.Body({mass: mass, shape: shape, material: this.sphereMaterial});
+        sphere.position.copy( new CANNON.Vec3(conf.x,conf.y,conf.z) )
+
+        sphere.angularVelocity = new CANNON.Vec3(0,0.3,0)
+
+        this.world.addBody(sphere)
+
+        // reply('registerPlatformBody',sphere.id, meshId)
+
+    }
+
+    createClothSphere = function({index,position,clothData}) {
+
+        this.bufferPosition = new Float32Array(position)
+
+        this.clothMass = clothData.clothMass // 1 kg in total
+        this.clothSize = clothData.clothSize // 1 meter
+        this.Nx = clothData.Nx // number of horizontal particles in the cloth
+        this.Nz = clothData.Nz // number of vertical particles in the cloth
+        this.mass = clothData.mass
+        this.restDistance = clothData.restDistance
+
+        const clothMaterial = new CANNON.Material('cloth')
+        
+        const cloth_sphere = new CANNON.ContactMaterial(clothMaterial, this.sphereMaterial, {
+          friction: 10.0,
+          restitution: 0.0,
+        })
+
+        const cloth_cloth = new CANNON.ContactMaterial(clothMaterial,clothMaterial, {
+            friction: 0.1,
+            restitution: 0
+        })
+
+        // sphere.material = sphereMaterial
+
+         // Contact stiffness - use to make softer/harder contacts
+        cloth_sphere.contactEquationStiffness = 1e9
+        // Stabilization time in number of timesteps
+        cloth_sphere.contactEquationRelaxation = 3
+
+        this.world.addContactMaterial(cloth_sphere)
+        this.world.addContactMaterial(cloth_cloth)
+
+        for( let i = 0; i < position.length; i+=3) {
+
+            const particle = new CANNON.Body({
+              // Fix in place the first row
+              mass: this.mass,
+              material: clothMaterial,
+              linearDamping: 0.8, 
+              fixedRotation: true
+            })
+            particle.addShape(new CANNON.Sphere(this.restDistance*0.252*Math.sqrt(2)))
+            // particle.linearDamping = 0.7
+            particle.position.set(position[i], position[i+1], position[i+2] )
+            // particle.velocity.set(0, -0.10, 0)
+        
+            this.particles.push(particle)
+            this.world.addBody(particle)
+        }
+        
+
+        for( let i = 0; i < index.length; i+=3) { 
+
+            this.connect(index[i], index[i+1], this.restDistance)
+            this.connect(index[i+1], index[i+2], this.restDistance)
+            this.connect(index[i], index[i+2], this.restDistance)
+            
+        }
+        
+        this.ready = true
+
+    }
+
+    connect = function (i1,i2,distance) {
+
+        // console.log('connect')
+    
+        let couple = [i1,i2];
+        
+        for(let c of this.constraintCouple) {
+          if(c.includes(i1) && c.includes(i2)) {
+            // console.log('punti gia collegati')
+            return
+          }
+        }
+    
+        // console.log('punti da collegare')
+        this.constraintCouple.push(couple)
+    
+        if(Math.abs(i1-i2) == this.Nx) {
+            // return
+          distance *= Math.sqrt(2)
+        
+        }
+    
+        this.world.addConstraint(new CANNON.DistanceConstraint(this.particles[i1], this.particles[i2]));
+        // world.addConstraint(new CANNON.DistanceConstraint(particles[i1], particles[i2], distance));
+    
+        // let spring = new CANNON.Spring(particles[i1], particles[i2], {
+        //   restLength: distance,
+        //   stiffness: 300,
+        //   damping: 1,
+        // })
+    
+        // springs.push(spring)
+    }
+    
 
     render() {
         this.renderer.render(this.scene, this.camera)

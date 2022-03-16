@@ -1,5 +1,6 @@
 import * as CANNON from 'cannon-es'
-import { Clock } from 'three/src/core/Clock'
+// const CANNON = require('cannon-es')
+// import { Clock } from 'three/src/core/Clock'
 
 
 // const body = new CANNON.Body({mass: 1});
@@ -7,7 +8,7 @@ let world
 // let wind = new CANNON.Vec3(0,0,-0.002)
 // let player
 // let start = false
-const CLOCK = new Clock() 
+// const CLOCK = new Clock() 
 
 
 let clothMass = 0.1 // 1 kg in total
@@ -46,6 +47,8 @@ const queryableFunction = {
     // },
     initWorld: function(forces = []) {
 
+        console.log('init world')
+
         let force = new CANNON.Vec3();
         for(let f of forces) {
             force = force.vadd(f);
@@ -59,6 +62,7 @@ const queryableFunction = {
         })
 
         world.solver.iterations = 10
+        console.log('world:',world)
         // defaultReply(world)
 
         // create player body
@@ -175,6 +179,8 @@ const queryableFunction = {
           friction: 10.0,
           restitution: 0.0,
         })
+
+        
 
         // sphere.material = sphereMaterial
 
@@ -443,6 +449,8 @@ function reply(...args) {
 
 function connect(i1,i2,distance) {
 
+    console.log('connect')
+
     let couple = [i1,i2];
     
     for(let c of constraintCouple) {
@@ -557,7 +565,7 @@ function hingeConstraint() {
 }
 
 onmessage = function(oEvent) {
-
+    console.log( 'on message worker')
     if( 
         oEvent.data instanceof Object && 
         oEvent.data.hasOwnProperty('method') &&

@@ -16,7 +16,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // console.log('hello world');
 
-import QueryableWorker from './QueryableWorker';
+// import QueryableWorker from './QueryableWorker';
 import BasicScene from './scene'
 
 let _APP
@@ -24,7 +24,7 @@ let _APP
 
 const clothMass = 0.1 // 1 kg in total
 const clothSize = 120 // 1 meter
-const Nx = 22 // number of horizontal particles in the cloth
+const Nx = 24// number of horizontal particles in the cloth
 const Nz = Nx // number of vertical particles in the cloth
 const mass = (clothMass / Nx) * Nz
 const restDistance = clothSize / Nx
@@ -53,13 +53,12 @@ function clothFunction(u, v, target) {
 
 window.addEventListener('DOMContentLoaded', () => {
   let world = {
-    forces: []
+    forces: [],
+    clothData
   }
 
   let g = new CANNON.Vec3(0,-250,0);
   world.forces.push(g);
-
-
 
   // let wind = new CANNON.Vec3(0,0,-5)
   // world.forces.push(wind);
@@ -73,6 +72,7 @@ window.addEventListener('DOMContentLoaded', () => {
     enableShadow: true, 
     world
   });
+
 
   // _APP.world.solver.iterations = 20 //moved to worker
   let conf = {
@@ -95,7 +95,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // _APP.scene.add(planeMesh)
 
-  _APP.worker.sendQuery('createBox',null,{mass: 0, conf})
+  // _APP.worker.sendQuery('createBox',null,{mass: 0, conf})
+  _APP.createBox({mass: 0, conf})
 
 
   // const clothMaterial = new CANNON.Material('cloth')
@@ -142,7 +143,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // let res = threeToCannon(BODY_MESH, {type: ShapeType.SPHERE})
 
-    _APP.worker.sendQuery('createSphere',null,{mass: 0, conf})
+    // _APP.worker.sendQuery('createSphere',null,{mass: 0, conf})
+    _APP.createSphere({mass: 0, conf})
 
     _APP.scene.add(BODY_MESH)
     
@@ -181,7 +183,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let clothGeometry = new THREE.ParametricGeometry(clothFunction, Nx, Nz)
     clothGeometry.attributes.position.needsUpdate = true
 
-    console.log(clothGeometry)
+    // console.log(clothGeometry)
 
     const clothPhongMaterial = new THREE.MeshPhongMaterial()
     clothPhongMaterial.side = THREE.DoubleSide;
@@ -191,7 +193,7 @@ window.addEventListener('DOMContentLoaded', () => {
     Fabric.createMaterial(AlcamoFSC.material).then((clothMaterial) => {
 
 
-      console.log(clothMaterial)
+      // console.log(clothMaterial)
 
 
       const clothMesh = new THREE.Mesh(clothGeometry, clothMaterial.frontSideMaterial)
@@ -255,7 +257,8 @@ window.addEventListener('DOMContentLoaded', () => {
         
       }
 
-      _APP.worker.sendQuery('createClothSphere',null,{index,position,clothData})
+      // _APP.worker.sendQuery('createClothSphere',null,{index,position,clothData})
+      _APP.createClothSphere({index,position,clothData})
       _APP.scene.add(clothMesh)
 
     })
@@ -272,29 +275,29 @@ window.addEventListener('DOMContentLoaded', () => {
     //   _APP.cloth.geometry.attributes.position.array[i*3+2] = position.z
     // })
 
-    _APP.worker.addListener('updateParticles',(positions) => {
-      // for(let i = positions.length - 1; i >= 0; i--) {
-      //   _APP.cloth.geometry.attributes.position.array[i] = positions[i]
-      //   // _APP.cloth.geometry.attributes.position = positions
-      // }
+    // _APP.worker.addListener('updateParticles',(positions) => {
+    //   // for(let i = positions.length - 1; i >= 0; i--) {
+    //   //   _APP.cloth.geometry.attributes.position.array[i] = positions[i]
+    //   //   // _APP.cloth.geometry.attributes.position = positions
+    //   // }
 
-      for(let i = 0; i < particles.length; i++) {
-        _APP.cloth.geometry.attributes.position.array[i*3] = positions[i*3]
-        _APP.cloth.geometry.attributes.position.array[i*3+1] = positions[i*3+1]
-        _APP.cloth.geometry.attributes.position.array[i*3+2] = positions[i*3+2]
-        // _APP.cloth.geometry.attributes.position = positions
-        particles[i].position.set(positions[i*3],positions[i*3+1],positions[i*3+2])
-      }
+    //   for(let i = 0; i < particles.length; i++) {
+    //     _APP.cloth.geometry.attributes.position.array[i*3] = positions[i*3]
+    //     _APP.cloth.geometry.attributes.position.array[i*3+1] = positions[i*3+1]
+    //     _APP.cloth.geometry.attributes.position.array[i*3+2] = positions[i*3+2]
+    //     // _APP.cloth.geometry.attributes.position = positions
+    //     particles[i].position.set(positions[i*3],positions[i*3+1],positions[i*3+2])
+    //   }
 
-      _APP.cloth.geometry.computeVertexNormals()
-      _APP.cloth.geometry.attributes.position.needsUpdate = true;
-      _APP.cloth.geometry.attributes.normal.needsUpdate = true;
+    //   _APP.cloth.geometry.computeVertexNormals()
+    //   _APP.cloth.geometry.attributes.position.needsUpdate = true;
+    //   _APP.cloth.geometry.attributes.normal.needsUpdate = true;
 
-      _APP.render()
+    //   _APP.render()
 
-      // _APP.worker.sendQuery('receiveBuffer',null,positions)
-      // _APP.worker.sendQuery('receiveBuffer',[positions.buffer],positions) //how this works worst???
-    })
+    //   // _APP.worker.sendQuery('receiveBuffer',null,positions)
+    //   // _APP.worker.sendQuery('receiveBuffer',[positions.buffer],positions) //how this works worst???
+    // })
 
     // _APP.worker.addListener('updateGeometry',() => {
     //   _APP.cloth.geometry.computeVertexNormals()
@@ -382,6 +385,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let mesh = new THREE.Mesh( new THREE.SphereGeometry(conf.r,conf.edge,conf.edge), phongMaterial);
     mesh.position.copy( new THREE.Vector3(conf.x,conf.y,conf.z));
+
+    // console.log(mesh.position)
 
     particles.push(mesh)
 

@@ -146,6 +146,7 @@ uniform sampler2D tSelfMap;
                 // this.texture = texture;
                 texture.wrapT = texture.wrapS = THREE.RepeatWrapping;
                 // texture.repeat.set( payload.repeat.x, payload.repeat.y );
+                texture.encoding = THREE.sRGBEncoding
                 resolve(texture);
             });
     
@@ -176,7 +177,7 @@ uniform sampler2D tSelfMap;
         
                 }
 
-                console.log('setMap',t)
+                // console.log('setMap',t)
                 this.frontSideMaterial.map = t
                 this.frontSideMaterial.map.anisotropy = 16
             })
@@ -190,7 +191,7 @@ uniform sampler2D tSelfMap;
             if( this.map && this.map.src) {
 
                 this.uploadTexture(this.map.src).then( (t) => {
-                    console.log('setMap',t)
+                    // console.log('setMap',t)
                     this.uniforms.tSelfMap = { type: "t", value: t };
 
                     resolve()
@@ -210,7 +211,7 @@ uniform sampler2D tSelfMap;
             if( this.bumpMap && this.bumpMap.src) {
 
                 this.uploadTexture(this.bumpMap.src).then( (t) => {
-                    console.log('setBump',t)
+                    // console.log('setBump',t)
                     this.frontSideMaterial.bumpMap = t
                     resolve()
                 })
@@ -227,7 +228,7 @@ uniform sampler2D tSelfMap;
             // material.alphaMap.repeat = repeat;
       
             this.uploadTexture(this.alphaMap.src).then( (t) => {
-                console.log('setAlpha',t)
+                // console.log('setAlpha',t)
                 this.frontSideMaterial.alphaMap = t
             })
       
@@ -244,7 +245,7 @@ uniform sampler2D tSelfMap;
             // material.roughnessMap.repeat = repeat;
       
             this.uploadTexture(this.roughnessMap.src).then( (t) => {
-                console.log('setRoughness',t)
+                // console.log('setRoughness',t)
                 this.frontSideMaterial.roughnessMap = t
             })
       
@@ -300,7 +301,7 @@ uniform sampler2D tSelfMap;
 
     init() {
 
-        console.log('init')
+        // console.log('init')
         this.frontSideMaterial.needsUpdate = true;
 
         this.frontSideMaterial.color = new THREE.Color(0.2,0.2,0.2);
@@ -314,7 +315,7 @@ uniform sampler2D tSelfMap;
 
             // console.log(shader);
 
-            console.log(THREE.ShaderChunk.map_fragment)
+            // console.log(THREE.ShaderChunk.map_fragment)
       
             shader.uniforms = Object.assign( shader.uniforms, this.uniforms );      
       
