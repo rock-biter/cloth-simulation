@@ -56,6 +56,8 @@ export default class BasicScene {
     constraintCouple = [];
     sphereMaterial
 
+    angle = Math.PI
+
     ready = false
 
     clock
@@ -80,7 +82,7 @@ export default class BasicScene {
 
         this.scene = new THREE.Scene()
         this.scene.background = new THREE.Color('#111111')
-        this.scene.add(new THREE.AxesHelper(5))
+        // this.scene.add(new THREE.AxesHelper(5))
 
         this.initRenderer(true)
         this.initDefaultLight()
@@ -125,7 +127,7 @@ export default class BasicScene {
 
         // this.renderer.toneMapping = THREE.ReinhardToneMapping
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-        this.renderer.toneMappingExposure = 1.3
+        this.renderer.toneMappingExposure = 1
         this.renderer.physicallyCorrectLights = true
         this.renderer.outputEncoding = THREE.sRGBEncoding
 
@@ -176,7 +178,9 @@ export default class BasicScene {
 
         this.scene.add(this.camera);
 
-        this.camera.position.set(200,160,80)
+        this.camera.position.set(120,140,80)
+        this.camera.zoom = 2
+        this.camera.updateProjectionMatrix()
 
     }
     /**
@@ -204,10 +208,10 @@ export default class BasicScene {
 
     initDefaultLight() {
 
-        const hemi = new THREE.HemisphereLight(0xffffff,0x222222,0.2)
+        const hemi = new THREE.HemisphereLight(0xffffff,0x222222,0.7)
         const spot = new THREE.SpotLight(0xffc9bf,4.5)
         spot.castShadow = true
-        spot.intensity = 400
+        spot.intensity = 250
 
         // const ambientLight = new THREE.AmbientLight('#ffffff',0.5)
         // const dirLight = new THREE.DirectionalLight('#ffffff',0.8)
@@ -218,28 +222,32 @@ export default class BasicScene {
         this.lights.push(hemi)
         this.lights.push(spot)
 
-        spot.position.set(200,150,120)
+        spot.position.set(100,120,100)
         const target = new THREE.Object3D()
         target.position.set(0,60,0)
         spot.target = target
 
-        spot.shadow.bias = -0.0001
-        spot.shadow.normalBias = 0.001
+        spot.shadow.bias = -0.000001
+        spot.shadow.normalBias = 0.8
         spot.shadow.mapSize.width = 1024*4
         spot.shadow.mapSize.height = 1024*4
-        spot.shadow.radius = 1.5
+        spot.shadow.radius = 2.7
         // spot.shadow.camera.fov = 20
-        spot.shadow.camera.fov = 20
-        spot.shadow.camera.near = 50
-        spot.shadow.camera.far = 130
-        // spot.decay = 2
-        // spot.penumbra = 0.9
+        spot.shadow.camera.fov = 30
+        spot.shadow.camera.near = 110
+        spot.shadow.camera.far = 200
+        spot.decay = 1
+        spot.penumbra = 0.8
 
         // this.lights.push(dirLight)
+
+        this.spotLightCameraHelper = new THREE.CameraHelper( spot.shadow.camera )
+        // this.scene.add( this.spotLightCameraHelper )
 
         // this.scene.add(ambientLight)
         this.scene.add(hemi)
         this.scene.add(spot)
+        this.scene.add(spot.target)
         // this.scene.add(dirLight) 
     }
     /**
@@ -321,9 +329,9 @@ export default class BasicScene {
         this.world.step(fr,dt,sub)
 
         if(this.sphere) {
-            angle += 0.05
-            let vel = new CANNON.Vec3(0,0.4*Math.sin(angle),0)
-            sphere.angularVelocity = vel
+            this.angle += 0.05
+            let vel = new CANNON.Vec3(0,0.6*Math.sin(this.angle / 2),0)
+            this.sphere.angularVelocity = vel
 
             // console.log(sphere.angularVelocity)
         }
@@ -458,12 +466,12 @@ export default class BasicScene {
         this.sphereMaterial = new CANNON.Material('sphere')
 
         let shape = new CANNON.Sphere(conf.r);
-        const sphere = new CANNON.Body({mass: mass, shape: shape, material: this.sphereMaterial});
-        sphere.position.copy( new CANNON.Vec3(conf.x,conf.y,conf.z) )
+        this.sphere = new CANNON.Body({mass: mass, shape: shape, material: this.sphereMaterial});
+        this.sphere.position.copy( new CANNON.Vec3(conf.x,conf.y,conf.z) )
 
-        sphere.angularVelocity = new CANNON.Vec3(0,0.3,0)
+        this.sphere.angularVelocity = new CANNON.Vec3(0,0.3,0)
 
-        this.world.addBody(sphere)
+        this.world.addBody(this.sphere)
 
         // reply('registerPlatformBody',sphere.id, meshId)
 

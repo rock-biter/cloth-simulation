@@ -137,6 +137,7 @@ window.addEventListener('DOMContentLoaded', () => {
     BODY_MESH = new THREE.Mesh( new THREE.SphereGeometry(conf.r,conf.edge,conf.edge), phongMaterial);
 
     BODY_MESH.receiveShadow = true
+    BODY_MESH.castShadow = true
     
     BODY_MESH.position.copy( new THREE.Vector3(conf.x,conf.y,conf.z));
     // DRAPE_MESH = model.children[1]
