@@ -15,7 +15,7 @@ module.exports = {
     plugins: [
         new CleanWebpackPlugin(),
         new CopyWebpackPlugin({ patterns: [
-            { from: Path.resolve(__dirname, '../src/models'), to: 'models' }, 
+            // { from: Path.resolve(__dirname, '../src/models'), to: 'models' }, 
             { from: Path.resolve(__dirname, '../src/fabric'), to: 'fabric' },
             { from: Path.resolve(__dirname, '../src/textures'), to: 'textures' }
         ]}),
